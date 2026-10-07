@@ -1,5 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../widgets/image_preview.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -9,6 +12,25 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickAndProcessImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile == null) return;
+      if (pickedFile != null) {
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Błąd podczas wyboru zdjęcia: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,8 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              ImagePreview(image: _image),
               const SizedBox(height: 32),
-              Text("Image Preview"),
 
               const SizedBox(height: 32),
               if (true) ...[
@@ -35,7 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => 1,
+                        onPressed: () =>
+                            _pickAndProcessImage(ImageSource.camera),
                         icon: const Icon(Icons.camera_alt),
                         label: const Text("Aparat"),
                         style: ElevatedButton.styleFrom(
@@ -46,7 +69,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => 1,
+                        onPressed: () =>
+                            _pickAndProcessImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library),
                         label: const Text("Galeria"),
                         style: ElevatedButton.styleFrom(

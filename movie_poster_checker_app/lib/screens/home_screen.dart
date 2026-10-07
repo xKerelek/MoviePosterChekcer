@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../services/api_service.dart';
 import '../widgets/image_preview.dart';
 import '../widgets/result_card.dart';
 import '../models/prediction_result.dart';
@@ -19,11 +20,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
 
   final ImagePicker _picker = ImagePicker();
+  final ApiService _apiService = ApiService();
 
   Future<void> _pickAndProcessImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile == null) return;
+
       if (pickedFile != null) {
         setState(() {
           _image = File(pickedFile.path);
@@ -33,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Błąd podczas wyboru zdjęcia: $e")),
+        SnackBar(content: Text('Błąd podczas wyboru zdjęcia: $e')),
       );
     }
   }
@@ -45,12 +48,31 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _analyzeImage() async {
+    if (_image == null) return;
+
+    try {
+      final result = await _apiService.predictGenre(_image!);
+      setState(() {
+        _predictionResult = result;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Błąd serwera: $e')));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "Movie Poster Checker",
+          'Movie Poster AI',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -77,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: () =>
                             _pickAndProcessImage(ImageSource.camera),
                         icon: const Icon(Icons.camera_alt),
-                        label: const Text("Aparat"),
+                        label: const Text('Aparat'),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
@@ -89,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: () =>
                             _pickAndProcessImage(ImageSource.gallery),
                         icon: const Icon(Icons.photo_library),
-                        label: const Text("Galeria"),
+                        label: const Text('Galeria'),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: Theme.of(
@@ -111,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: OutlinedButton.icon(
                         onPressed: _cancelImage,
                         icon: const Icon(Icons.close),
-                        label: const Text("Odrzuć"),
+                        label: const Text('Odrzuć'),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
@@ -124,11 +146,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           setState(() {
                             _isLoading = true;
                           });
+                          _analyzeImage();
                         },
                         icon: const Icon(Icons.check),
-                        label: const Text("Analizuj"),
+                        label: const Text('Analizuj'),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           backgroundColor: Theme.of(
                             context,
                           ).colorScheme.primary,
@@ -146,9 +169,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: OutlinedButton.icon(
                     onPressed: _cancelImage,
                     icon: const Icon(Icons.refresh),
-                    label: const Text("Sprawdź inny plakat..."),
+                    label: const Text('Sprawdź inny plakat'),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
                   ),
                 ),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../widgets/image_preview.dart';
+import '../widgets/result_card.dart';
+import '../models/prediction_result.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +15,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   File? _image;
+  PredictionResult? _predictionResult;
+  bool _isLoading = false;
+
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickAndProcessImage(ImageSource source) async {
@@ -22,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (pickedFile != null) {
         setState(() {
           _image = File(pickedFile.path);
+          _predictionResult = null;
+          _isLoading = false;
         });
       }
     } catch (e) {
@@ -29,6 +36,13 @@ class _HomeScreenState extends State<HomeScreen> {
         SnackBar(content: Text("Błąd podczas wyboru zdjęcia: $e")),
       );
     }
+  }
+
+  void _cancelImage() {
+    setState(() {
+      _image = null;
+      _predictionResult = null;
+    });
   }
 
   @override
@@ -49,9 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               ImagePreview(image: _image),
               const SizedBox(height: 32),
-
+              ResultCard(
+                isLoading: _isLoading,
+                predictionResult: _predictionResult,
+              ),
               const SizedBox(height: 32),
-              if (true) ...[
+              if (_image == null) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -85,6 +102,55 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ],
+                ),
+              ] else if (_predictionResult == null && !_isLoading) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _cancelImage,
+                        icon: const Icon(Icons.close),
+                        label: const Text("Odrzuć"),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _isLoading = true;
+                          });
+                        },
+                        icon: const Icon(Icons.check),
+                        label: const Text("Analizuj"),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (_predictionResult != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _cancelImage,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text("Sprawdź inny plakat..."),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    ),
+                  ),
                 ),
               ],
             ],
